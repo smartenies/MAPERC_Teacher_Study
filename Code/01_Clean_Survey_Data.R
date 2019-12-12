@@ -37,6 +37,7 @@ table(q_data$UserLanguage, useNA = "always")
 
 #' What schools are represented?
 table(q_data$Q2, useNA = "always")
+q_data$school <- q_data$Q2
 
 #' -----------------------------------------------------------------------------
 #' Who are our participants?
@@ -560,7 +561,7 @@ q_data <- q_data %>%
   mutate(air_qual_issues_orig = Q30,
          air_qual_issues_other = Q30_14_TEXT)
 
-View(select(q_data, air_qual_issues_orig, air_qual_issues_other))
+# View(select(q_data, air_qual_issues_orig, air_qual_issues_other))
 q_data$Q30_14_TEXT[!is.na(q_data$Q30_14_TEXT)]
 
 #' Recode some of these participant supplied responses from the "other" category
@@ -622,7 +623,7 @@ table(q_data$use_cleaning_prod, useNA = "always")
 
 #' Q32  What types of products do you use? (Check all that apply.)
 #' Create dummy variables for these
-View(select(q_data, Q31, Q32_1:Q32_7))
+# View(select(q_data, Q31, Q32_1:Q32_7))
 head(q_data$Q32_1, n = 20)
 
 q_data <- q_data %>% 
@@ -638,7 +639,7 @@ q_data <- q_data %>%
          use_cleaner_degrease_grn = ifelse(str_detect(Q32_5, "Green"), 1, 0),
          use_cleaner_bleach_std = ifelse(str_detect(Q32_6, "Standard"), 1, 0),
          use_cleaner_bleach_grn = ifelse(str_detect(Q32_6, "Green"), 1, 0))
-View(select(q_data, Q31, Q32_1:Q32_7_TEXT, use_cleaner_surface_std:use_cleaner_bleach_grn))
+# View(select(q_data, Q31, Q32_1:Q32_7_TEXT, use_cleaner_surface_std:use_cleaner_bleach_grn))
 
 #' Check out the "other" cleaners
 q_data$Q32_7_TEXT <- tolower(q_data$Q32_7_TEXT)
@@ -656,7 +657,7 @@ q_data[grepl("rug cleaner", q_data$Q32_7_TEXT) == T, "use_cleaner_other_std"] <-
 q_data[grepl("magic eraser", q_data$Q32_7_TEXT) == T, "use_cleaner_other_std"] <- 1
 q_data[grepl("white board", q_data$Q32_7_TEXT) == T, "use_cleaner_other_std"] <- 1
 
-View(select(q_data, Q31, Q32_1:Q32_7_TEXT, use_cleaner_surface_std:use_cleaner_other_std))
+# View(select(q_data, Q31, Q32_1:Q32_7_TEXT, use_cleaner_surface_std:use_cleaner_other_std))
 
 #' Q33  Do you have any classroom pets during any part of the year?
 table(q_data$Q33, useNA = "always")
@@ -674,7 +675,7 @@ q_data$pest_problem <- ifelse(q_data$Q35 == "Yes", 1, 0)
 table(q_data$pest_problem, useNA = "always")
 
 #' 36 What kind of pests?
-View(select(q_data, Q36))
+# View(select(q_data, Q36))
 
 #' Check out the "other" pests
 q_data$Q36_7_TEXT[!is.na(q_data$Q36_7_TEXT)]
@@ -688,7 +689,7 @@ q_data <- q_data %>%
          pests_roaches = ifelse(str_detect(Q36, "Roaches"), 1, 0),
          pests_rodents = ifelse(str_detect(Q36, "Mice"), 1, 0),
          pests_other = ifelse(str_detect(Q36, "Other"), 1, 0))
-View(select(q_data, pest_problem:pests_other))
+# View(select(q_data, pest_problem:pests_other))
 
 #' -----------------------------------------------------------------------------
 #' Health and wellbeing
@@ -789,7 +790,7 @@ q_data <- q_data %>%
                                    freq_eye_strain, freq_tension, freq_lack_atten,
                                    freq_dizziness, freq_nausea, freq_depression,
                                    freq_lethargy, na.rm = T))
-View(select(q_data, any_headaches:any_lethargy, freq_symptoms_count))
+# View(select(q_data, any_headaches:any_lethargy, freq_symptoms_count))
 summary(q_data$any_symptoms_count)
 summary(q_data$freq_symptoms_count)
 
@@ -823,6 +824,10 @@ q_data$leave_sad <- ifelse(str_detect(q_data$Q43_5, "Strongly agree") |
                                      str_detect(q_data$Q43_5, "Somewhat agree"), 1, 0)
 table(q_data$leave_sad, useNA = "always")
 
+#' -----------------------------------------------------------------------------
+#' Overall satisfaction
+#' -----------------------------------------------------------------------------
+
 #' Q39 Overall, how satisfied are you with the environment of your classroom or 
 #' work space?
 #' 1 = extremely disatisfied, 5 = extremely satisfied
@@ -839,5 +844,9 @@ table(q_data$Q39, q_data$environment_sat_cat, useNA = "always")
 q_data$environment_dissatisfied <- ifelse(q_data$environment_sat_cat %in% c(1, 2), 1, 0)
 table(q_data$environment_dissatisfied)
 
+#' -----------------------------------------------------------------------------
+#' Save the cleaned data
+#' -----------------------------------------------------------------------------
 
+write_csv(q_data, here::here("Data", "Cleaned_Survey_Data.csv"))
 
