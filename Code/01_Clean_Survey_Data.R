@@ -44,7 +44,6 @@ q_data$school <- q_data$Q2
 #' -----------------------------------------------------------------------------
 
 #' Q3 What is your position?
-
 table(q_data$Q3, useNA = "always")
 q_data$Q3_5_TEXT[!is.na(q_data$Q3_5_TEXT)]
 
@@ -92,7 +91,7 @@ table(q_data$Q5, useNA = "always")
 
 q_data <- q_data %>% 
   mutate(primary_loc = Q5) %>% 
-  mutate(loc_clasroom = ifelse(primary_loc == "Classroom", 1, 0)) %>% 
+  mutate(loc_classroom = ifelse(primary_loc == "Classroom", 1, 0)) %>% 
   mutate(loc_cafeteria = ifelse(primary_loc == "Kitchen/Cafeteria", 1, 0)) %>% 
   mutate(loc_library = ifelse(primary_loc == "Library", 1, 0)) %>% 
   mutate(loc_no_primary = ifelse(primary_loc == "No primary space", 1, 0)) %>% 
@@ -154,8 +153,7 @@ table(q_data$Q9, q_data$light_impact_work_cat, useNA = "always") #' How much doe
 q_data <- q_data %>% 
   mutate(light_impact_work = ifelse(light_impact_work_cat %in% c(1, 2), 1, 0))
 
-table(q_data$Q9, q_data$light_impact_work, useNA = "always") #' Does light 
-impact your work?
+table(q_data$Q9, q_data$light_impact_work, useNA = "always") #' Does light impact your work?
 
 #' Q10 Which of the following lighting issues distract you, at least once a 
 #' week, in your classroom or work space? 
@@ -169,9 +167,7 @@ q_data <- q_data %>%
 # View(select(q_data, light_issues_orig, light_issues_other))
 q_data$Q10_12_TEXT[!is.na(q_data$Q10_12_TEXT)]
 
-
 #' Recode some of these participant supplied responses from the "other" category
-#' and from question 11
 q_data <- q_data %>% 
   mutate(light_issues_other2 = NA) %>% 
   mutate(light_issues_other2 = ifelse(str_detect(light_issues_other, "I don't have any windows, so there is no natural light"),
@@ -308,7 +304,6 @@ q_data <- q_data %>%
 q_data$Q17_9_TEXT[!is.na(q_data$Q17_9_TEXT)]
 
 #' Recode some of these participant supplied responses from the "other" category
-#' and from question 18
 q_data <- q_data %>% 
   mutate(sound_issues_other2 = NA) %>% 
   mutate(sound_issues_other2 = ifelse(str_detect(sound_issues_other, "noise from upstairs"),
@@ -424,7 +419,6 @@ q_data <- q_data %>%
 q_data$Q23_11_TEXT[!is.na(q_data$Q23_11_TEXT)]
 
 #' Recode some of these participant supplied responses from the "other" category
-#' and from question 24
 q_data <- q_data %>% 
   mutate(temp_issues_other2 = NA) %>% 
   mutate(temp_issues_other2 = ifelse(str_detect(temp_issues_other, "now it is hotter and not as comfortable"),
@@ -448,16 +442,10 @@ q_data <- q_data %>%
   mutate(temp_issues_other2 = ifelse(str_detect(temp_issues_other, "68 with air conditioner too cold"),
                                      "Too cold", temp_issues_other2))
 
-# View(select(q_data, Q23, Q23_11_TEXT, Q24))
-# q_data$Q24[!is.na(q_data$Q24)]
 
 q_data <- q_data %>% 
-  # mutate(temp_issues = paste(str_remove(temp_issues_orig,"Other"), 
-  #                             temp_issues_other2, temp_issues_other3, sep = ",")) %>% 
   mutate(temp_issues = paste(str_remove(temp_issues_orig,"Other"), temp_issues_other2, sep = ",")) %>% 
   mutate(temp_issues = str_remove(temp_issues, "NA"))
-# View(select(q_data, temp_issues_orig, temp_issues_other, temp_issues_other2,
-#             temp_issues_other3, temp_issues))
 
 q_data <- q_data %>% 
   mutate(temp_heat_from_sun = ifelse(str_detect(temp_issues, "Heat from sun"), 1, 0),
@@ -565,7 +553,6 @@ q_data <- q_data %>%
 q_data$Q30_14_TEXT[!is.na(q_data$Q30_14_TEXT)]
 
 #' Recode some of these participant supplied responses from the "other" category
-#' and from question 24
 q_data <- q_data %>% 
   mutate(air_qual_issues_other2 = NA) %>% 
   mutate(air_qual_issues_other2 = ifelse(str_detect(air_qual_issues_other, "It just smells older"),
@@ -578,8 +565,6 @@ q_data <- q_data %>%
                                          "Cleaning products or residue", air_qual_issues_other2))
 
 q_data <- q_data %>% 
-  # mutate(air_qual_issues = paste(str_remove(air_qual_issues_orig,"Other"), 
-  #                             air_qual_issues_other2, air_qual_issues_other3, sep = ",")) %>% 
   mutate(air_qual_issues = paste(str_remove(air_qual_issues_orig,"Other"), air_qual_issues_other2, sep = ",")) %>% 
   mutate(air_qual_issues = str_remove(air_qual_issues, "NA"))
 # View(select(q_data, air_qual_issues_orig, air_qual_issues_other, air_qual_issues_other2,
@@ -612,7 +597,6 @@ q_data <- q_data %>%
                                      air_qual_food, air_qual_supplies,
                                      air_qual_outside,
                                      air_qual_other_issue, na.rm = T))
-# View(select(q_data, air_qual_trash:air_qual_issues_count))
 summary(q_data$air_qual_issues_count)
 
 #' Q31 Do you clean your classroom or work space with your own cleaning products?
@@ -848,5 +832,5 @@ table(q_data$environment_dissatisfied)
 #' Save the cleaned data
 #' -----------------------------------------------------------------------------
 
-write_csv(q_data, here::here("Data", "Cleaned_Survey_Data.csv"))
+write_csv(q_data, here::here("Data", "Cleaned_Indoor_Env_Survey_Data.csv"))
 
