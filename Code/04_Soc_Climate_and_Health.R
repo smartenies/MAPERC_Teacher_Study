@@ -737,3 +737,41 @@ plot_model(soc_freq_lethargy_ses, type = "int",
            terms = c("scale_overall_score_current",
                      "pct_free_reduced"))
 
+#' -----------------------------------------------------------------------------
+#' Assessing whether social climate is an EM or confounder in the relationship
+#' between IAQ and frequent health outcomes
+#' -----------------------------------------------------------------------------
+
+#' IAQ and the number of symptoms reported (frequent)
+iaq_freq_ct <- glmer(freq_symptoms_count ~ scale_iaq +
+                       job_teacher + loc_classroom + 
+                       pct_free_reduced +
+                       (1|school), 
+                     family = poisson, data = df3)
+summary(iaq_freq_ct)
+plot_model(iaq_freq_ct, type = "pred", terms = c("scale_iaq"))
+
+summary(soc_iaq_freq_ct)
+plot_model(soc_iaq_freq_ct, type = "pred", terms = c("scale_iaq"))
+
+tab_model(iaq_freq_ct, soc_iaq_freq_ct)
+
+#' Split into high and low social climate
+df3_low <- filter(df3, scale_overall_score_current <= 0)
+df3_high <- filter(df3, scale_overall_score_current > 0)
+
+iaq_freq_ct_high_soc <- glmer(freq_symptoms_count ~ scale_iaq +
+                       job_teacher + loc_classroom + 
+                       pct_free_reduced +
+                       (1|school), 
+                     family = poisson, data = df3_high)
+summary(iaq_freq_ct_high_soc)
+
+iaq_freq_ct_low_soc <- glmer(freq_symptoms_count ~ scale_iaq +
+                                job_teacher + loc_classroom + 
+                                pct_free_reduced +
+                                (1|school), 
+                              family = poisson, data = df3_low)
+summary(iaq_freq_ct_low_soc)
+
+tab_model(iaq_freq_ct, iaq_freq_ct_high_soc, iaq_freq_ct_low_soc)

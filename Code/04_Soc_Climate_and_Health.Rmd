@@ -1,7 +1,4 @@
 ---
-title: "Relationships between Social Climate and Health"
-author: "Sheena Martenies"
-date: "3/3/2020"
 output: html_document
 ---
 
@@ -14,21 +11,42 @@ library(readxl)
 library(qwraps2)
 ```
 
+## Relationships of social climate and indoor environmental quality and frequently reported health symptoms in a suburban school district
+
+**Sheena E. Martenies**^1^, Jen Schill^2^, Matthew Klimm^2^, Jeni Cross^2^^,^^3^, Shannon Oliver^4^, Sheryl Magzamen^1^^,^^5^
+
+
+^1^ Department of Environmental and Radiological Health Sciences, Colorado State University
+
+^2^ Institute for the Built Environment, Colorado State University
+
+^3^ Department of Sociology, Colorado State University
+
+^4^ Manager, Energy and Sustainability, Partnering School District
+
+^5^ Department of Epidemiology, Colorado School of Public Health
+
+<br></br>
+**Contact Us:**
+
+Sheena.Martenies@colostate.edu
+
+GitHub: [smartenies/MAPERC_Teacher_Study](https://github.com/smartenies/MAPERC_Teacher_Study)
+
 ### 1. Project overview
 
-This document summarizes the analyses of school-level social climate score and individual-level self-reported health outcomes for teachers and staff in our pariticpating school district. 
+This document summarizes the analyses of school-level social climate score and individual-level self-reported health outcomes for teachers and staff in our participating school district. 
 
-#### Objectives
+#### 1.1 Objectives
 
-The objective of this study was to assess whether social climate scores at the school level were associated with self-reported number of frequent (i.e., experienced at least once per week) health symptoms among faculty and staff working in our partner school district.
+The primary objective of this study was to assess whether social climate scores at the school level were associated with self-reported number of frequent (i.e., experienced at least once per week) health symptoms among faculty and staff working in our partner school district. We also examined if indoor air climate scores were associated with health symptoms and whether social climate scores were a modifier of this effect.
 
 ### 2. Methods
 
-#### ELEVATE Survey
+#### 2.1 ELEVATE Survey
 Staff at elementary, middle, and high schools in our participating district completed a social climate survey assessing their attitudes about their schools. Among other questions, these surveys assessed whether staff would recommend their schools to colleagues or friends looking for a job, how positive staff perceived the interactions between teachers and students to be, and whether staff were optimistic about their schools improving in the future. Data from these surveys was available at the school level. Our primary outcome from this survey was the overall social climate score, which accounts for responses to several of the survey's questions. We also used individual questions on the survey in secondary analyses. Higher climate scores correspond with more positive social climates as perceived by staff.
 
-
-#### Indoor Environment Survey
+#### 2.2 Indoor Environment Survey
 We also collected data on self-reported health symptoms at the individual level. These data came from an indoor environment survey that included questions on how indoor environmental variables such as lighting, noise, and air quality impacted the ability of staff to complete their jobs. This questionnaire asked teachers whether they experienced any of the following symptoms and, if yes, how frequently they experienced them:
 
 - Headaches
@@ -45,27 +63,27 @@ We also collected data on self-reported health symptoms at the individual level.
 - Feeling depressed
 - Feeling tired or lethargic
 
-Our primary outcome of interest was the number of frequent heath symptoms reported by each individual. We considered a health outcome to be "frequent" if it occured at least once a week. In secondary analyses, We also explored associations between social climate scores at the school level and frequent occurance of each health outcome as a binary variable.
+Our primary outcome of interest was the number of frequent heath symptoms reported by each individual. We considered a health outcome to be "frequent" if it occurred at least once a week. In secondary analyses, We also explored associations between social climate scores at the school level and frequent occurrence of each health outcome as a binary variable.
 
-#### Operational Report Card (ORC) Data
+#### 2.3 Operational Report Card (ORC) Data
 
-OCR here
+Operation report card (ORC) scores were used to characterize the quality of the built environment in each school. Overall ORC scores were based on the average score in five operations areas: energy efficiency, thermal comfort, acoustics, visual quality, and indoor air quality (IAQ). ORC scores were generated from a building survey completed by a graduate student completing walk-throughs of each participating school. Higher ORC scores were associated with higher quality indoor environments in the schools.  We were also interested in the IAQ component of the ORC score as a separate predictor in our model due to known associations between indoor contaminants and the health outcomes included in our survey. Both the mean overall ORC score and the IAQ score for each school were included in models as continuous variables.
 
-#### Statistical Analysis
+#### 2.4 Statistical Analysis
 
-Social climate survey data, ORC scores, and the number of frequent health outcomes were summarized as means and standard deviations (SD) or counts and frequencies as appropriate. We explore correlations between variables using Pearson's r statistic. 
+Social climate survey data, ORC scores (overall and IAQ), and the number of frequent health outcomes were summarized as means and standard deviations (SD) or counts and frequencies as appropriate. We explore correlations between variables using Pearson's r statistic. 
 
-Associatons between social climate scores and the number of frequent health outcomes were assessed using generalized linear models with a Poisson log-link function with random effects for schools. To improve model convervence, the social climate scores and ORC scores were scaled prior to model fitting. We therefore report effect sizes for a standard deviation increase in social climate score.
+Associations between social climate scores and the number of frequent health outcomes were assessed using generalized linear models with a Poisson log-link function with random effects for schools. To improve model convergence, the social climate scores and ORC scores were scaled prior to model fitting. We therefore report effect sizes for a standard deviation increase in social climate score or ORC score.
 
 We also assessed relationships between social climate scores and individual health outcomes operationalized as binomial outcomes. We again used a generalized linear model with random effects for school and scaled exposure variables. 
 
 For each of our models, we assessed interactions between social climate scores and job category (teacher vs. other)
 
-All analyses were done in `r R.Version()$version.string`.
+All analyses were completed in `r R.Version()$version.string`.
 
 ### 3. Results
 
-#### Study Population
+#### 3.1 Study Population
 ```{r, echo = F, include = F, warning=FALSE}
 #' -----------------------------------------------------------------------------
 #' Read in the clean indoor environment survey and social climate
@@ -128,7 +146,12 @@ job_n <- df2 %>%
   group_by(job_cat) %>% 
   summarise(count = n() ) %>%
   mutate(pct = round((count / sum(count)) * 100, 1)) %>% 
-  mutate(job_cat = str_replace(job_cat, "_", " "))
+  mutate(job_cat = str_replace(job_cat, "_", " ")) %>% 
+  mutate(job_cat = str_replace(job_cat, "Other Not_Spec", "Other, Not Specified")) %>% 
+  mutate(job_cat = str_replace(job_cat, "Admin", "Administrator")) %>% 
+  mutate(job_cat = str_replace(job_cat, "Aide Monitor", "Aide or Monitor")) %>% 
+  mutate(job_cat = str_replace(job_cat, "Media Tech", "Media Technician")) %>% 
+  arrange(desc(count))
 
 job_n[which(job_n$job_cat == "Teacher"), "pct"]
 
@@ -148,10 +171,11 @@ Our survey was available to teachers and other staff at the school. Overall, `r 
 ```{r, include = T, echo = F, warning=FALSE}
 knitr::kable(job_n,
              col.names = c("Job Category", "Count", "Percent"),
-             caption = "Table 1. Summary of job categories represented")
+             caption = "Table 1. Summary of job categories represented",
+             table.attr = "style='width:50%;'")
 ```
 
-#### Social Climate and Indoor Air Quality
+#### 3.2 Social Climate and Indoor Air Quality
 
 ```{r, echo = F, include = F, warning=FALSE}
 
@@ -232,8 +256,8 @@ Among the included schools, IAQ scores were higher on average compared to overal
 ```{r, include = T, echo = F, warning=FALSE}
 knitr::kable(exp_sum, caption = "Table 2. Summary of climate survey scores and operational report card (ORC) scores")
 ```
-
-#### Frequently Reported Health Symptoms
+<br></br>
+#### 3.3 Frequently Reported Health Symptoms
 ```{r, echo = F, include = F, warning=FALSE}
 
 symptom_sum <-
@@ -277,14 +301,15 @@ teach_t_test <- t.test(freq_symptoms_count ~ job_teacher, data = df2)
 
 ```
 
-The number of frequent health outcomes reported ranged from `r min(df2$freq_symptoms_count, na.rm = T)` to `r max(df2$freq_symptoms_count, na.rm = T)` (Table 3). Teachers reported a slightly greater number of symptoms on average compared to other staff members (`r round(teach_t_test$estimate[2], 1)` vs. `r round(teach_t_test$estimate[1], 1)`, p = `r round(teach_t_test$p.value, 2)`). The most common frequent health symptoms among all staff were eye strain (44%) and lethargy or tireness (37%).
+The number of frequent health outcomes reported ranged from `r min(df2$freq_symptoms_count, na.rm = T)` to `r max(df2$freq_symptoms_count, na.rm = T)` (Table 3). Teachers reported a slightly greater number of symptoms on average compared to other staff members (`r round(teach_t_test$estimate[2], 1)` vs. `r round(teach_t_test$estimate[1], 1)`, p = `r round(teach_t_test$p.value, 2)`). The most common frequent health symptoms among all staff were eye strain (44%) and lethargy or tiredness (37%).
 
-```{r, echo = F, results = "asis", caption = "Table 3. Summary of health symptoms by job (teachers vs. others)"}
+```{r, echo = F, results = "asis"}
 print(cbind(all_symp, teach_symp),
-      cnames = c("All (N = 134)", "Not Teachers (N = 51)", "Teachers (N = 83)"))
+      cnames = c("All (N = 134)", "Not Teachers (N = 51)", "Teachers (N = 83)"),
+      title = "Table 3. Summary of frequently reported health outcomes")
 ```
 
-#### Correlations between outcomes and exposures
+#### 3.4 Correlations between outcomes and exposures
 
 ``` {r, include = F, echo = F, warning=FALSE}
 #' -----------------------------------------------------------------------------
@@ -292,21 +317,32 @@ print(cbind(all_symp, teach_symp),
 #' -----------------------------------------------------------------------------
 
 library(ggcorrplot)
+library(viridis)
 
 df_corr <- df3 %>%
   select(iaq, mean_orc, overall_score_current, freq_symptoms_count,
-         job_teacher, loc_classroom, pct_free_reduced)
+         job_teacher, loc_classroom, pct_free_reduced) %>% 
+  mutate(job_teacher = as.numeric(job_teacher),
+         loc_classroom = as.numeric(loc_classroom))
 cor(df_corr)
+
+cor_plot <- ggcorrplot(round(cor(df_corr), 1), method = "circle", type = "upper",
+           lab = F) +
+  scale_x_discrete(labels = c("IAQ Score", "Mean ORC Score", "Social Climate Score",
+                              "Frequent Symptom Count", "Teacher", "Classroom")) +
+  scale_y_discrete(labels = c("Mean ORC Score", "Social Climate Score",
+                              "Frequent Symptom Count", "Teacher", "Classroom",
+                              "% Free and Reduced Lunch")) +
+  scale_fill_viridis(name = "Correlation")
 ```
 
 Overall social climate scores were negatively correlated with the number of frequent symptoms reported (r = `r round(cor(df3$overall_score_current, df3$freq_symptoms_count), 2)`) and the percentage of students at the school who qualified for free or reduced lunch (r = `r round(cor(df3$overall_score_current, df3$pct_free_reduced), 2)`) (Figure 1). The social climate score was also negatively correlated with the mean ORC score (r = `r round(cor(df3$overall_score_current, df3$mean_orc), 2)`) and the indoor air quality score (r = `r round(cor(df3$overall_score_current, df3$iaq), 2)`). 
 
-```{r, echo = F, fig.cap = "Figure 1. Correlations between variables"}
-ggcorrplot(round(cor(df_corr), 1), method = "circle", type = "upper",
-           lab = T, lab_size = 3)
+```{r, echo = F, warnings = F, fig.cap = "Figure 1. Correlations between variables"}
+suppressWarnings(print(cor_plot))
 ```
 
-#### Associations between social climate scores and the number of frequent health outcomes reported
+#### 3.5 Associations between social climate scores and the number of frequent health outcomes reported
 
 ```{r, echo = F, include = F, warning=FALSE}
 
@@ -355,6 +391,15 @@ soc_iaq_freq_ct <- glmer(freq_symptoms_count ~ scale_overall_score_current +
 summary(soc_iaq_freq_ct)
 
 plot_model(soc_iaq_freq_ct, type = "pred", terms = c("scale_overall_score_current"))
+
+#' IAQ and the number of symptoms reported (frequent)
+iaq_freq_ct <- glmer(freq_symptoms_count ~ scale_iaq +
+                       job_teacher + loc_classroom + 
+                       pct_free_reduced +
+                       (1|school), 
+                     family = poisson, data = df3)
+summary(iaq_freq_ct)
+plot_model(iaq_freq_ct, type = "pred", terms = c("scale_iaq"))
 
 #' Testing for an interaction between iaq + SOC
 soc_iaq_freq_ct_int <- glmer(freq_symptoms_count ~ scale_overall_score_current +
@@ -409,22 +454,57 @@ plot_model(soc_iaq_freq_ct_ses, type = "int", terms = c("scale_overall_score_cur
 
 ```
 
-In models adjusted for being a teacher (binary), working in a classroom (binary), the percentage of students who qualify for free or reduced lunch (continuous), and the indoor air quality score (continuous), overall campus climate scores were negatively associated with the number of frequent health effects reported by staff at the schools (Table 4). A standard deviation increase in the campus social climate score was associated with **HOW TO SAY THIS**?? 
+In models adjusted for being a teacher (binary), working in a classroom (binary), the percentage of students who qualify for free or reduced lunch (continuous), and the indoor air quality score (continuous), overall campus climate scores were negatively associated with the number of frequent health effects reported by staff at the schools (Table 4). A standard deviation increase in the campus social climate score was associated with 0.68-fold (95% confidence interval (CI): 0.48 - 0.95) change in the rate of frequent health outcomes reported by staff.
 
 ```{r, echo = F, warning=FALSE}
-tab_model(soc_iaq_freq_ct,
-          title = "Table 4. Associations between social climate scores and the number of frequent health effects reported")
+tab_model(soc_iaq_freq_ct, 
+          show.p = F,
+          pred.labels = c("Intercept", "Social Climate Score", "IAQ Score", "Teacher", "Classroom", "% Free and Reduced Lunch"),
+          dv.labels = c("Frequent Health Outcomes"),
+          title = "Table 4. Associations between IAQ and social climate scores and the number of frequent health effects reported")
+```
+<br/><br/>
+We assessed whether social climate scores were an effect modifier on the relationship between indoor air quality scores and the number of frequent health outcomes reported. In a model without social climate scores, a 1 SD increase in IAQ scores was associated with an 1.08-fold change (95% CI: 0.88 - 1.34) the rate of frequent health outcomes reported (Table 5). After stratifying on social climate scores (above vs. below the median), the relationship between IAQ and the number of frequent health outcomes varied. For participants at low social climate score schools, a 1 SD increase in IAQ scores was associated with a 0.96-fold change (95%CI: 0.72 - 1.28) in the rate of self-reported frequent health outcomes; for participants at high social climate schools, a 1-sd increase in IAQ scores was associated with a 0.49-fold change (95%CI: 0.35 - 0.70) in the rate of frequent health symptoms. Our stratified analysis suggested that social climate may modify the effect of IAQ on the rate of frequent health outcomes reported by staff at the schools.
+
+```{r, echo = F, include = F}
+#' Split into high and low social climate
+df3_low <- filter(df3, scale_overall_score_current <= 0)
+df3_high <- filter(df3, scale_overall_score_current > 0)
+
+iaq_freq_ct_high_soc <- glmer(freq_symptoms_count ~ scale_iaq +
+                       job_teacher + loc_classroom + 
+                       pct_free_reduced +
+                       (1|school), 
+                     family = poisson, data = df3_high)
+summary(iaq_freq_ct_high_soc)
+
+iaq_freq_ct_low_soc <- glmer(freq_symptoms_count ~ scale_iaq +
+                                job_teacher + loc_classroom + 
+                                pct_free_reduced +
+                                (1|school), 
+                              family = poisson, data = df3_low)
+summary(iaq_freq_ct_low_soc)
 ```
 
-We also observed differences in how social environment scores were associated with the number of frequent health effects reported by job status (Table 5). For teachers, the association between social climate scores and frequent health effects was attenuated compared to other staff members (Figure 3).
+```{r, echo = F, warning=FALSE}
+tab_model(iaq_freq_ct, iaq_freq_ct_high_soc, iaq_freq_ct_low_soc,
+          show.p = F,
+          pred.labels = c("Intercept", "IAQ Score", "Teacher", "Classroom", "% Free and Reduced Lunch"),
+          dv.labels = c("All Staff", "Staff at High Social Climate Schools", "Staff at Low Social Climate Schools"),
+          title = "Table 5. Assessing effect modification of social climate scores on associations between IAQ and the number of frequent health outcomes reported")
+```
+<br/><br/>
+We also observed differences in how social environment scores were associated with the number of frequent health effects reported by job status. For teachers, the association between social climate scores and frequent health effects was attenuated compared to other staff members (Figure 2).
 
 ```{r, echo = F, warning=FALSE}
 plot_model(soc_iaq_freq_ct_teach, type = "int", terms = c("scale_overall_score_current",
                                                            "job_teacher"),
-           title = "Figure 4. Interaction between social climate score and job category on the number of frequent health effects reported")
+           title = "Figure 2. Interaction between social climate score and job category\nand the number of frequent health outcomes reported",
+           axis.title = c("Social climate score (scaled)", "Frequent Health Outcome Count"),
+           legend.title = "Teacher")
 ```
 
-#### Associations between social climate scores and specific frequent health outcomes
+#### 3.6 Associations between social climate scores and specific frequent health outcomes
 
 ```{r, echo = F, include = F, warnings = F}
 #' -----------------------------------------------------------------------------
@@ -599,24 +679,32 @@ plot_model(soc_freq_lethargy_ses, type = "int",
            terms = c("scale_overall_score_current",
                      "pct_free_reduced"))
 ```
-
-We assessed relationships between social climate score and specific frequently occuring health outcomes in mixed-effects logistic regression models. In models adjusted for being a teacher (binary), working in a classroom (binary), the percentage of students who qualify for free or reduced lunch (continuous), and the indoor air quality score (continuous), overall campus climate scores were negatively associated with the odds of frequent headache, dizziness, and lethargy (Table 5). We also found that being a teacher was associated with frequent depression symptoms. (Table 5)
+<br/><br/>
+We assessed relationships between social climate score and specific frequently occurring health outcomes in mixed-effects logistic regression models. In models adjusted for being a teacher (binary), working in a classroom (binary), the percentage of students who qualify for free or reduced lunch (continuous), and the indoor air quality score (continuous), overall campus climate scores were negatively associated with the odds of frequent headache, dizziness, and lethargy (Table 5). In particulate, a 1 SD increase in social climate scores was associated with an odds ratio for frequent lethargy of 0.35 (95% CI: 0.17 - 0.72). We also found that being a teacher was associated with higher odds of frequent depression symptoms (OR = 9.94 (95%CI: 1.41- 70.37)), though the confidence interval for this association was wide (Table 6).
 
 ```{r, echo = F, warning=FALSE}
 tab_model(soc_freq_headache, soc_freq_dizziness, soc_freq_lethargy, soc_freq_depression,
-          title = "Table 5. Associations between social climate score and frequent health outcomes")
+          show.p = F,
+          pred.labels = c("Intercept", "Social Climate Score", "IAQ Score", "Teacher", "Classroom", "% Free and Reduced Lunch"),
+          dv.labels = c("Frequent Headaches", "Frequent Dizziness", "Frequent Lethargy", "Frequent Depression"),
+          title = "Table 6. Associations between social climate score and frequent health outcomes")
 ```
-
-We observed an interaction between being a teacher and overall social climate scores on the odds of frequent depression symptoms (Figure 5). For teachers, the effect of social climate on the odds of frequent depression was attenutated relative to those not working as teachers.
+<br/><br/>
+We observed an interaction between being a teacher and overall social climate scores on the odds of frequent depression symptoms (Figure 3). For teachers, the effect of social climate on the odds of frequent depression was attenuated relative to those not working as teachers.
 
 ```{r, echo = F, warning=FALSE}
 plot_model(soc_freq_depression_teach, type = "int",
            terms = c("scale_overall_score_current", "job_teacher"),
-           title = "Figure 5. Interaction between social climate score and job category on odds of experiencing frequent depression")
+           title = "Figure 3. Interaction between social climate score and job category\non odds of experiencing frequent depression",
+           axis.title = c("Social climate score (scaled)", "Frequency of Reported Depression Symptoms"),
+           legend.title = "Teacher")
 ```
 
 ### 4. Summary of main findings
 
-Overall, we found that higher social climate scores were associated with fewer frequent health symptoms among survey participants in our school. Social climate scores were inversely associated with the odds of experiencing frequent headaches, dizziness, and lethargy. Being a teacher was associated with increased odds of experiencing frequent depression. 
-We also found that that relationships between higher social climate scores were associated with fewer frequent health symptoms were attentuated for participants who were teachers compared to other job categories. As social climate scores were only available at the school level, we were not able to assess whether there were differences in how teachers assess their schools' social climates relative to other staff working in the school.
+Overall, we found that higher social climate scores were associated with lower rates of frequently reported health symptoms among survey participants in our school. Social climate scores were inversely associated with the odds of experiencing frequent headaches, dizziness, and lethargy. Being a teacher was associated with increased odds of experiencing frequent depression. 
+
+Social climate scores may modify the effect of indoor air quality on the rate of frequently reported health symptoms. Staff in schools with higher social climate scores had lower rates of frequent health outcomes compared to staff from low social climate schools.
+
+We also found that that the relationship between higher social climate scores and lower rates of frequent health symptoms was attenuated for participants who were teachers compared to other job categories. As social climate scores were only available at the school level, we were not able to assess whether there were differences in how teachers assess their schools' social climates relative to other staff working in the school.
 
