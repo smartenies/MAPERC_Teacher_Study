@@ -39,7 +39,7 @@ This document summarizes the analyses of school-level social climate score and i
 
 #### 1.1 Objectives
 
-The primary objective of this study was to assess whether social climate scores at the school level were associated with self-reported number of frequent (i.e., experienced at least once per week) health symptoms among faculty and staff working in our partner school district. We also examined if indoor air climate scores were associated with health symptoms and whether social climate scores were a modifier of this effect.
+The primary objective of this study was to assess whether social climate scores at the school level were associated with self-reported number of frequent (i.e., experienced at least once per week) health symptoms among faculty and staff working in our partner school district. We also examined if indoor air quality scores were associated with health symptoms and whether social climate scores were a modifier of this effect.
 
 ### 2. Methods
 
@@ -67,7 +67,7 @@ Our primary outcome of interest was the number of frequent heath symptoms report
 
 #### 2.3 Operational Report Card (ORC) Data
 
-Operation report card (ORC) scores were used to characterize the quality of the built environment in each school. Overall ORC scores were based on the average score in five operations areas: energy efficiency, thermal comfort, acoustics, visual quality, and indoor air quality (IAQ). ORC scores were generated from a building survey completed by a graduate student completing walk-throughs of each participating school. Higher ORC scores were associated with higher quality indoor environments in the schools.  We were also interested in the IAQ component of the ORC score as a separate predictor in our model due to known associations between indoor contaminants and the health outcomes included in our survey. Both the mean overall ORC score and the IAQ score for each school were included in models as continuous variables.
+Operational report card (ORC) scores were used to characterize the quality of the built environment in each school. Overall ORC scores were based on the average score in five operations areas: energy efficiency, thermal comfort, acoustics, visual quality, and indoor air quality (IAQ). ORC scores were generated from a building survey completed by a graduate student completing walk-throughs of each participating school. Higher ORC scores were associated with higher quality indoor environments in the schools.  We were also interested in the IAQ component of the ORC score as a separate predictor in our model due to known associations between indoor contaminants and the health outcomes included in our survey. Both the mean overall ORC score and the IAQ score for each school were included in models as continuous variables.
 
 #### 2.4 Statistical Analysis
 
@@ -256,7 +256,7 @@ Among the included schools, IAQ scores were higher on average compared to overal
 ```{r, include = T, echo = F, warning=FALSE}
 knitr::kable(exp_sum, caption = "Table 2. Summary of climate survey scores and operational report card (ORC) scores")
 ```
-<br></br>
+
 #### 3.3 Frequently Reported Health Symptoms
 ```{r, echo = F, include = F, warning=FALSE}
 
@@ -334,12 +334,18 @@ cor_plot <- ggcorrplot(round(cor(df_corr), 1), method = "circle", type = "upper"
                               "Frequent Symptom Count", "Teacher", "Classroom",
                               "% Free and Reduced Lunch")) +
   scale_fill_viridis(name = "Correlation")
+
 ```
 
 Overall social climate scores were negatively correlated with the number of frequent symptoms reported (r = `r round(cor(df3$overall_score_current, df3$freq_symptoms_count), 2)`) and the percentage of students at the school who qualified for free or reduced lunch (r = `r round(cor(df3$overall_score_current, df3$pct_free_reduced), 2)`) (Figure 1). The social climate score was also negatively correlated with the mean ORC score (r = `r round(cor(df3$overall_score_current, df3$mean_orc), 2)`) and the indoor air quality score (r = `r round(cor(df3$overall_score_current, df3$iaq), 2)`). 
 
 ```{r, echo = F, warnings = F, fig.cap = "Figure 1. Correlations between variables"}
 suppressWarnings(print(cor_plot))
+# jpeg(filename = here::here("Figs", "Variable_Corr_Plot.jpeg"),
+#      width = 7, height = 5, units = "in", res = 500)
+# suppressWarnings(print(cor_plot))
+# dev.off()
+
 ```
 
 #### 3.5 Associations between social climate scores and the number of frequent health outcomes reported
@@ -391,6 +397,29 @@ soc_iaq_freq_ct <- glmer(freq_symptoms_count ~ scale_overall_score_current +
 summary(soc_iaq_freq_ct)
 
 plot_model(soc_iaq_freq_ct, type = "pred", terms = c("scale_overall_score_current"))
+
+# jpeg(filename = here::here("Figs", "SOC_vs_Pred_Symp_Count.jpeg"),
+#      width = 7, height = 5, units = "in", res = 500)
+# plot_model(soc_iaq_freq_ct, type = "pred", terms = c("scale_overall_score_current"),
+#            title = "",
+# axis.title = c("Social climate score (scaled)", "Frequent health sypmtom count")) + 
+#   theme_sjplot(base_size = 18) +
+#   font_size(axis_title.x = 24, axis_title.y = 24, title = 24,
+#             labels.x = 18, labels.y = 18) +
+#   legend_style(inside = T, pos = "top_right")
+# dev.off()
+# 
+# jpeg(filename = here::here("Figs", "IAQ_vs_Pred_Symp_Count.jpeg"),
+#      width = 7, height = 5, units = "in", res = 500)
+# plot_model(soc_iaq_freq_ct, type = "pred", terms = c("scale_iaq"),
+#            title = "",
+# axis.title = c("Indoor air quality score (scaled)", "Frequent health sypmtom Count")) + 
+#   theme_sjplot(base_size = 18) +
+#   font_size(axis_title.x = 24, axis_title.y = 24, title = 24,
+#             labels.x = 18, labels.y = 18) +
+#   legend_style(inside = T, pos = "top_right")
+# dev.off()
+
 
 #' IAQ and the number of symptoms reported (frequent)
 iaq_freq_ct <- glmer(freq_symptoms_count ~ scale_iaq +
@@ -464,7 +493,7 @@ tab_model(soc_iaq_freq_ct,
           title = "Table 4. Associations between IAQ and social climate scores and the number of frequent health effects reported")
 ```
 <br/><br/>
-We assessed whether social climate scores were an effect modifier on the relationship between indoor air quality scores and the number of frequent health outcomes reported. In a model without social climate scores, a 1 SD increase in IAQ scores was associated with an 1.08-fold change (95% CI: 0.88 - 1.34) the rate of frequent health outcomes reported (Table 5). After stratifying on social climate scores (above vs. below the median), the relationship between IAQ and the number of frequent health outcomes varied. For participants at low social climate score schools, a 1 SD increase in IAQ scores was associated with a 0.96-fold change (95%CI: 0.72 - 1.28) in the rate of self-reported frequent health outcomes; for participants at high social climate schools, a 1-sd increase in IAQ scores was associated with a 0.49-fold change (95%CI: 0.35 - 0.70) in the rate of frequent health symptoms. Our stratified analysis suggested that social climate may modify the effect of IAQ on the rate of frequent health outcomes reported by staff at the schools.
+We assessed whether social climate scores were an effect modifier on the relationship between indoor air quality scores and the number of frequent health outcomes reported. In a model without social climate scores, a 1 SD increase in IAQ scores was associated with an 1.08-fold change (95% CI: 0.88 - 1.34) the rate of frequent health outcomes reported (Table 5). After stratifying on social climate scores (above vs. below the mean), the relationship between IAQ and the number of frequent health outcomes varied. For participants at low social climate score schools, a 1 SD increase in IAQ scores was associated with a 0.96-fold change (95%CI: 0.72 - 1.28) in the rate of self-reported frequent health outcomes; for participants at high social climate schools, a 1-sd increase in IAQ scores was associated with a 0.49-fold change (95%CI: 0.35 - 0.70) in the rate of frequent health symptoms. Our stratified analysis suggested that social climate may modify the effect of IAQ on the rate of frequent health outcomes reported by staff at the schools.
 
 ```{r, echo = F, include = F}
 #' Split into high and low social climate
@@ -502,6 +531,21 @@ plot_model(soc_iaq_freq_ct_teach, type = "int", terms = c("scale_overall_score_c
            title = "Figure 2. Interaction between social climate score and job category\nand the number of frequent health outcomes reported",
            axis.title = c("Social climate score (scaled)", "Frequent Health Outcome Count"),
            legend.title = "Teacher")
+
+# jpeg(filename = here::here("Figs", "SOC_Teacher_Interaction.jpeg"),
+#      height = 5, width = 7.5, units = "in", res = 600)
+# plot_model(soc_iaq_freq_ct_teach, type = "int", terms = c("scale_overall_score_current",
+#                                                            "job_teacher"),
+#            title = "",
+#            axis.title = c("Social climate score (scaled)", "Frequent Health Outcome Count"),
+#            legend.title = "Teacher") +
+#   theme_sjplot(base_size = 60) +
+#   font_size(axis_title.x = 60, axis_title.y = 60, title = 60,
+#             labels.x = 36, labels.y = 36) +
+#   legend_style(inside = T, pos = "top_right")
+# dev.off()
+
+
 ```
 
 #### 3.6 Associations between social climate scores and specific frequent health outcomes
