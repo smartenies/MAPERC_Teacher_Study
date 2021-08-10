@@ -1,0 +1,888 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warnings = F)
+options(qwraps2_markup = "markdown")
+
+library(tidyverse)
+library(readxl)
+library(qwraps2)
+library(ggplot2)
+library(patchwork)
+```
+
+## Relationships of social climate and environmental quality and frequently reported health symptoms in a suburban school district
+
+**Sheena E. Martenies**^1^, Jen Schill^2^, Matthew Klimm^2^, Jeni Cross^2^^,^^3^, Shannon Oliver^4^, Sheryl Magzamen^1^^,^^5^
+
+
+^1^ Department of Environmental and Radiological Health Sciences, Colorado State University
+
+^2^ Institute for the Built Environment, Colorado State University
+
+^3^ Department of Sociology, Colorado State University
+
+^4^ Manager, Energy and Sustainability, Partnering School District
+
+^5^ Department of Epidemiology, Colorado School of Public Health
+
+<br></br>
+**Contact Us:**
+
+Sheena.Martenies@colostate.edu
+
+GitHub: [smartenies/MAPERC_Teacher_Study](https://github.com/smartenies/MAPERC_Teacher_Study)
+
+### 1. Project overview
+
+This document summarizes the analyses of school-level social climate score and individual-level self-reported health outcomes for teachers and staff in our participating school district. 
+
+#### 1.1 Objectives
+
+The primary objective of this study was to assess whether social climate scores at the school level were associated with self-reported number of frequent (i.e., experienced at least once per week) health symptoms among faculty and staff working in our partner school district. We also examined if indoor air quality scores were associated with health symptoms and whether social climate scores were a modifier of this effect.
+
+### 2. Methods
+
+#### 2.1 ELEVATE Survey
+Staff at elementary, middle, and high schools in our participating district completed a social climate survey assessing their attitudes about their schools. Among other questions, these surveys assessed whether staff would recommend their schools to colleagues or friends looking for a job, how positive staff perceived the interactions between teachers and students to be, and whether staff were optimistic about their schools improving in the future. Data from these surveys was available at the school level. Our primary outcome from this survey was the overall social climate score, which accounts for responses to several of the survey's questions. We also used individual questions on the survey in secondary analyses. Higher climate scores correspond with more positive social climates as perceived by staff.
+
+#### 2.2 Indoor Environment Survey
+We also collected data on self-reported health symptoms at the individual level. These data came from an indoor environment survey that included questions on how indoor environmental variables such as lighting, noise, and air quality impacted the ability of staff to complete their jobs. This questionnaire asked teachers whether they experienced any of the following symptoms and, if yes, how frequently they experienced them:
+
+- Headaches
+- Wheezing (breathing with a whistling or rattling sound in your chest)
+- Dry, itchy, or irritated eyes
+- Sore or dry throat
+- Stuffy or runny nose, or sinus congestion
+- Sneezing
+- Tired or strained eyes
+- Tension, irritability, or nervousness
+- Having a hard time paying attention
+- Dizziness or lightheadedness
+- Nausea or upset stomach
+- Feeling depressed
+- Feeling tired or lethargic
+
+Our primary outcome of interest was the number of frequent heath symptoms reported by each individual. We considered a health outcome to be "frequent" if it occurred at least once a week. In secondary analyses, We also explored associations between social climate scores at the school level and frequent occurrence of each health outcome as a binary variable.
+
+#### 2.3 Operational Report Card (ORC) Data
+
+Operational report card (ORC) scores were used to characterize the quality of the built environment in each school. Overall ORC scores were based on the average score in five operations areas: energy efficiency, thermal comfort, acoustics, visual quality, and indoor air quality (IAQ). ORC scores were generated from a building survey completed by a graduate student completing walk-throughs of each participating school. Higher ORC scores were associated with higher quality indoor environments in the schools.  We were also interested in the IAQ component of the ORC score as a separate predictor in our model due to known associations between indoor contaminants and the health outcomes included in our survey. Both the mean overall ORC score and the IAQ score for each school were included in models as continuous variables.
+
+#### 2.4 Statistical Analysis
+
+Social climate survey data, ORC scores (overall and IAQ), and the number of frequent health outcomes were summarized as means and standard deviations (SD) or counts and frequencies as appropriate. We explore correlations between variables using Pearson's r statistic. 
+
+Associations between social climate scores and the number of frequent health outcomes were assessed using generalized linear models with a Poisson log-link function with random effects for schools. To improve model convergence, the social climate scores and ORC scores were scaled prior to model fitting. We therefore report effect sizes for a standard deviation increase in social climate score or ORC score.
+
+We also assessed relationships between social climate scores and individual health outcomes operationalized as binomial outcomes. We again used a generalized linear model with random effects for school and scaled exposure variables. 
+
+For each of our models, we assessed interactions between social climate scores and job category (teacher vs. other)
+
+All analyses were completed in `r R.Version()$version.string`.
+
+### 3. Results
+
+#### 3.1 Study Population
+```{r, echo = F, include = F, warning=FALSE}
+#' -----------------------------------------------------------------------------
+#' Read in the clean indoor environment survey and social climate
+#' Create a single dataset
+#' Drop original survey variables
+#' -----------------------------------------------------------------------------
+
+q_data <- read_csv(here::here("Data", "Cleaned_Indoor_Env_Survey_Data.csv")) %>% 
+  select(RecordedDate, ResponseId, school, 
+         job_cat:loc_missing,
+         light_dissatisfied, light_impact_work, 
+         light_too_dark:light_issues_count,
+         sound_dissatisfied, sound_impact_work, 
+         sound_other_voices:sound_issues_count,
+         temp_dissatisfied, temp_impact_work, 
+         temp_heat_from_sun:light_issues_count,
+         air_qual_dissatisfied, air_qual_stuffy, air_qual_musty,
+         air_smell_dissatisfied,
+         air_qual_trash:air_qual_issues_count,
+         any_pets, pest_problem,
+         any_headaches:freq_symptoms_count,
+         leave_confident:leave_sad,
+         environment_dissatisfied) 
+
+q_schools <- unique(q_data$school)
+
+e_data <- read_csv(here::here("Data", "Cleaned_ORC_Data.csv")) %>% 
+  filter(school %in% q_schools)
+
+s_data <- read_csv(here::here("Data", "Cleaned_Climate_Survey_Data.csv")) %>% 
+  filter(school %in% q_schools)
+
+l_data <- read_csv(here::here("Data", "Cleaned_School_SES_Data.csv")) %>% 
+  filter(school %in% q_schools)
+
+head(l_data)
+
+
+df <- left_join(q_data, l_data, by = "school") %>% 
+  left_join(s_data, by = "school") %>% 
+  left_join(e_data, by = "school")
+  
+glimpse(df)
+
+# How many surveys did we have?
+df2 <- filter(df, !is.na(school))
+nrow(df2)
+
+#' How many schools?
+length(unique(df2$school))
+
+#' How many responses at each school?
+table(df2$school, useNA = 'ifany')
+school_n <- df2 %>%
+  select(school, ResponseId) %>% 
+  group_by(school) %>% 
+  tally() %>%
+  arrange(n)
+  
+#' Jobs represented?
+length(unique(df2$job_cat))
+job_n <- df2 %>%
+  select(job_cat) %>% 
+  group_by(job_cat) %>% 
+  summarise(count = n() ) %>%
+  mutate(pct = round((count / sum(count)) * 100, 1)) %>% 
+  mutate(job_cat = str_replace(job_cat, "_", " ")) %>% 
+  mutate(job_cat = str_replace(job_cat, "Other Not_Spec", "Other, Not Specified")) %>% 
+  mutate(job_cat = str_replace(job_cat, "Admin", "Administrator")) %>% 
+  mutate(job_cat = str_replace(job_cat, "Aide Monitor", "Aide or Monitor")) %>% 
+  mutate(job_cat = str_replace(job_cat, "Media Tech", "Media Technician")) %>% 
+  arrange(desc(count))
+
+job_n[which(job_n$job_cat == "Teacher"), "pct"]
+
+#' Primary work location
+table(df2$primary_loc, useNA = 'ifany')
+prop.table(table(df2$primary_loc, useNA = 'ifany'))*100
+
+#' Distribution of free and reduced lunch
+summary(df2$pct_free_reduced)
+hist(df2$pct_free_reduced)
+```
+
+Overall, we collected data from `r nrow(df2)` participants representing `r length(unique(df2$school))` schools. The median (range) number of surveys collected from each school was `r median(school_n$n)` (`r min(school_n$n)` - `r max(school_n$n)`).
+
+Our survey was available to teachers and other staff at the school. Overall, `r length(unique(df2$job_cat))` different job categories were represented (Table 1). Teachers made up the greatest percentage of participants (`r job_n[which(job_n$job_cat == "Teacher"), "pct"]`%)
+
+```{r, include = T, echo = F, warning=FALSE}
+knitr::kable(job_n,
+             col.names = c("Job Category", "Count", "Percent"),
+             caption = "Table 1. Summary of job categories represented",
+             table.attr = "style='width:50%;'")
+```
+
+#### 3.2 Social Climate and Indoor Air Quality
+
+```{r, echo = F, include = F, warning=FALSE}
+
+#' -----------------------------------------------------------------------------
+#' Summarize the ORC scores
+#' Calculate an "average orc" for the 5 variables assessed
+#'
+#' The non-annotated scores are the average of the "site" and "occupant" scores
+#' mean_orc is the average of the averaged scores for each component of the ORC
+#' -----------------------------------------------------------------------------
+
+#' Calulcate the mean score
+df2 <- df2 %>%
+  mutate(mean_orc = (energy_efficiency + thermal_comfort +
+                           acoustics + visual_quality + iaq)/5)
+
+#' Going to calculate scaled exposures and log-transformed exposures, too
+df3 <- df2 %>%
+  mutate(scale_energy_efficiency = scale(energy_efficiency),
+         scale_thermal_comfort = scale(thermal_comfort),
+         scale_acoustics = scale(acoustics),
+         scale_visual_quality = scale(visual_quality),
+         scale_iaq = scale(iaq),
+         scale_mean_orc = scale(mean_orc))
+ 
+orc_sum <- df3 %>% 
+  select(mean_orc) %>% 
+  summarize("Variable" = "Mean ORC score",
+            "Mean (SD)" = paste0(round(mean(mean_orc, na.rm = T), 1),
+                                 " (", round(sd(mean_orc, na.rm = T), 1), ")"),
+            "Min" = round(min(mean_orc, na.rm = T), 1),
+            "Median" = round(median(mean_orc, na.rm = T), 1),
+            "Max" = round(max(mean_orc, na.rm = T), 1))
+
+iaq_sum <- df3 %>% 
+  select(iaq) %>% 
+  summarize("Variable" = "Indoor air quality (IAQ) score",
+            "Mean (SD)" = paste0(round(mean(iaq, na.rm = T), 1),
+                                 " (", round(sd(iaq, na.rm = T), 1), ")"),
+            "Min" = round(min(iaq, na.rm = T), 1),
+            "Median" = round(median(iaq, na.rm = T), 1),
+            "Max" = round(max(iaq, na.rm = T), 1))
+
+#' -----------------------------------------------------------------------------
+#' Summarize the climate survey data (school level)
+#' -----------------------------------------------------------------------------
+
+#' Calculate scaled exposures
+df3$scale_overall_score_current <- scale(df3$overall_score_current)
+df3$scale_recommend_strongly <- scale(df3$recommend_strongly)
+df3$scale_work_env_positive <- scale(df3$work_env_positive)
+df3$scale_students_enthusiatic <- scale(df3$students_enthusiatic)
+df3$scale_optimistic_improvement <- scale(df3$optimistic_improvement)
+df3$scale_students_supportive <- scale(df3$students_supportive)
+df3$scale_colleagues_pos_attitude <- scale(df3$colleagues_pos_attitude)
+df3$scale_teach_student_respectful <- scale(df3$teach_student_respectful)
+df3$scale_students_helping <- scale(df3$students_helping)
+df3$scale_colleagues_support_initiatives <- scale(df3$colleagues_support_initiatives)
+df3$scale_teachers_trusted <- scale(df3$teachers_trusted)
+
+clim_sum <- df3 %>% 
+  select(overall_score_current) %>% 
+  summarize("Variable" = "Social climate score",
+            "Mean (SD)" = paste0(round(mean(overall_score_current, na.rm = T), 1),
+                                 " (", round(sd(overall_score_current, na.rm = T), 1), ")"),
+            "Min" = round(min(overall_score_current, na.rm = T), 1),
+            "Median" = round(median(overall_score_current, na.rm = T), 1),
+            "Max" = round(max(overall_score_current, na.rm = T), 1))
+
+exp_sum <- bind_rows(clim_sum, orc_sum, iaq_sum)
+
+```
+
+There was substantial variability in the distribution of social climate scores across schools (Table 2). The scores ranged from `r round(min(df3$overall_score_current, na.rm = T), 1)` to `r round(max(df3$overall_score_current, na.rm = T), 1)`, with a median of `r round(median(df3$overall_score_current, na.rm = T), 1)`. 
+
+Among the included schools, IAQ scores were higher on average compared to overall ORC scores (mean (SD) = `r round(mean(df3$mean_orc, na.rm = T), 1)` ( `r round(sd(df3$mean_orc, na.rm = T), 1)`) for mean ORC scores as compared to `r round(mean(df3$mean_orc, na.rm = T), 1)` ( `r round(sd(df3$mean_orc, na.rm = T), 1)`) for IAQ scores.
+
+```{r, include = T, echo = F, warning=FALSE}
+knitr::kable(exp_sum, caption = "Table 2. Summary of climate survey scores and operational report card (ORC) scores")
+cor(df3$overall_score_current, df3$mean_orc)
+cor(df3$overall_score_current, df3$iaq)
+cor(df3$mean_orc, df3$iaq)
+```
+
+#### 3.3 Frequently Reported Health Symptoms
+```{r, echo = F, include = F, warning=FALSE}
+
+symptom_sum <-
+  list("Number of frequent symptoms reported" =
+       list("Min" = ~ min(.data$freq_symptoms_count, na_rm = T),
+            "Max" = ~ max(.data$freq_symptoms_count, na_rm = T),
+            "Mean (SD)" = ~ qwraps2::mean_sd(.data$freq_symptoms_count, na_rm = T)),
+       "Headaches" =
+       list("N (%)" = ~ qwraps2::n_perc0(.data$freq_headaches, na_rm = T)),
+       "Wheeze" =
+       list("N (%)" = ~ qwraps2::n_perc0(.data$freq_wheeze, na_rm = T)),
+       "Eye irritation" =
+       list("N (%)" = ~ qwraps2::n_perc0(.data$freq_eye_irritation, na_rm = T)),
+       "Sore throat" =
+       list("N (%)" = ~ qwraps2::n_perc0(.data$freq_sore_throat, na_rm = T)),
+       "Sinus symptoms" =
+       list("N (%)" = ~ qwraps2::n_perc0(.data$freq_sinus_symp, na_rm = T)),
+       "Sneeze" =
+       list("N (%)" = ~ qwraps2::n_perc0(.data$freq_sneeze, na_rm = T)),
+       "Eye strain" =
+       list("N (%)" = ~ qwraps2::n_perc0(.data$freq_eye_strain, na_rm = T)),
+       "Tension, irritability, or nervousness " =
+       list("N (%)" = ~ qwraps2::n_perc0(.data$freq_tension, na_rm = T)),
+       "Lack of attention" =
+       list("N (%)" = ~ qwraps2::n_perc0(.data$freq_lack_atten, na_rm = T)),
+       "Dizziness or lightheadedness" =
+       list("N (%)" = ~ qwraps2::n_perc0(.data$freq_dizziness, na_rm = T)),
+       "Nausea" =
+       list("N (%)" = ~ qwraps2::n_perc0(.data$freq_nausea, na_rm = T)),
+       "Feeling depressed" =
+       list("N (%)" = ~ qwraps2::n_perc0(.data$freq_depression, na_rm = T)),
+       "Lethargy or tiredness" =
+       list("N (%)" = ~ qwraps2::n_perc0(.data$freq_lethargy, na_rm = T))
+       )
+
+all_symp <- summary_table(df2, symptom_sum)
+teach_symp <- summary_table(dplyr::group_by(df2, job_teacher), symptom_sum)
+
+#' Did teachers have more symptoms on average?
+teach_t_test <- t.test(freq_symptoms_count ~ job_teacher, data = df2)
+
+```
+
+The number of frequent health outcomes reported ranged from `r min(df2$freq_symptoms_count, na.rm = T)` to `r max(df2$freq_symptoms_count, na.rm = T)` (Table 3). Teachers reported a slightly greater number of symptoms on average compared to other staff members (`r round(teach_t_test$estimate[2], 1)` vs. `r round(teach_t_test$estimate[1], 1)`, p = `r round(teach_t_test$p.value, 2)`). The most common frequent health symptoms among all staff were eye strain (44%) and lethargy or tiredness (37%).
+
+```{r, echo = F, results = "asis"}
+print(cbind(all_symp, teach_symp),
+      cnames = c("All (N = 134)", "Not Teachers (N = 51)", "Teachers (N = 83)"),
+      title = "Table 3. Summary of frequently reported health outcomes")
+```
+
+#### 3.4 Correlations between outcomes and exposures
+
+``` {r, include = F, echo = F, warning=FALSE}
+#' -----------------------------------------------------------------------------
+#' Correlations between outcomes and exposures (ORC scores or social climate)
+#' -----------------------------------------------------------------------------
+
+library(ggcorrplot)
+library(viridis)
+
+df_corr <- df3 %>%
+  select(iaq, mean_orc, overall_score_current, freq_symptoms_count,
+         job_teacher, loc_classroom, pct_free_reduced) %>% 
+  mutate(job_teacher = as.numeric(job_teacher),
+         loc_classroom = as.numeric(loc_classroom))
+cor(df_corr)
+
+cor_plot <- ggcorrplot(round(cor(df_corr), 1), method = "circle", type = "upper",
+           lab = F) +
+  scale_x_discrete(labels = c("IAQ Score", "Mean ORC Score", "Social Climate Score",
+                              "Frequent Symptom Count", "Teacher", "Classroom")) +
+  scale_y_discrete(labels = c("Mean ORC Score", "Social Climate Score",
+                              "Frequent Symptom Count", "Teacher", "Classroom",
+                              "% Free and Reduced Lunch")) +
+  scale_fill_viridis(name = "Correlation")
+
+```
+
+Overall social climate scores were negatively correlated with the number of frequent symptoms reported (r = `r round(cor(df3$overall_score_current, df3$freq_symptoms_count), 2)`) and the percentage of students at the school who qualified for free or reduced lunch (r = `r round(cor(df3$overall_score_current, df3$pct_free_reduced), 2)`) (Figure 1). The social climate score was also negatively correlated with the mean ORC score (r = `r round(cor(df3$overall_score_current, df3$mean_orc), 2)`) and the indoor air quality score (r = `r round(cor(df3$overall_score_current, df3$iaq), 2)`). 
+
+```{r, echo = F, warnings = F, fig.cap = "Figure 1. Correlations between variables"}
+suppressWarnings(print(cor_plot))
+# jpeg(filename = here::here("Figs", "Variable_Corr_Plot.jpeg"),
+#      width = 7, height = 5, units = "in", res = 500)
+# suppressWarnings(print(cor_plot))
+# dev.off()
+
+```
+
+#### 3.5 Associations between social climate scores and the number of frequent health outcomes reported
+
+Single pollutant and two pollutant models
+
+```{r, echo = F, include = F, warning=FALSE}
+
+#' -----------------------------------------------------------------------------
+#' Associations between social climate and number of health outcomes reported (count)
+#' "Two pollutant" models with social climate and ORC scores
+#'
+#' The models include a random intercept for school
+#' Using the scaled versions of the ORC scores for better model convergence
+#' Covariates: job_teacher (binary), loc_classroom (binary), pct_free_reduced (continuous)
+#'
+#' Primary findings:
+#'     - After controlling for being a teacher, working in a classroom, and
+#'     school-level SES (% of students that qualify for free or reduced lunch),
+#'     overall social climate score is associated with the number of types of
+#'     frequent health outcomes reported
+#' -----------------------------------------------------------------------------
+
+library(lme4)
+library(ggeffects)
+library(sjPlot)
+
+#' Make job_teacher and loc_classroom factors
+df3$job_teacher <- factor(df3$job_teacher, 
+                          labels = c("Other", "Teacher"))
+df3$loc_classroom <- factor(df3$loc_classroom)
+
+#' Single Pollutant Models
+#' Social Climate
+mod1 <- glmer(freq_symptoms_count ~ scale_overall_score_current +
+                               job_teacher + loc_classroom +
+                               pct_free_reduced +
+                               (1|school),
+                             family = poisson, data = df3)
+summary(mod1)
+
+#' Mean ORC
+mod2 <- glmer(freq_symptoms_count ~ scale_mean_orc +
+                               job_teacher + loc_classroom +
+                               pct_free_reduced +
+                               (1|school),
+                             family = poisson, data = df3)
+summary(mod2)
+
+#' IAQ
+mod3 <- glmer(freq_symptoms_count ~ scale_iaq +
+                               job_teacher + loc_classroom +
+                               pct_free_reduced +
+                               (1|school),
+                             family = poisson, data = df3)
+summary(mod3)
+
+tab_model(mod1, mod2, mod3)
+
+#' Two pollutant models
+#' Social Climate and Mean ORC
+mod1_2 <- glmer(freq_symptoms_count ~ scale_overall_score_current + scale_mean_orc +
+                               job_teacher + loc_classroom +
+                               pct_free_reduced +
+                               (1|school),
+                             family = poisson, data = df3)
+summary(mod1_2)
+
+#' Social Climate and IAQ
+mod1_3 <- glmer(freq_symptoms_count ~ scale_overall_score_current + scale_iaq +
+                               job_teacher + loc_classroom +
+                               pct_free_reduced +
+                               (1|school),
+                             family = poisson, data = df3)
+summary(mod1_3)
+
+tab_model(mod1_2, mod1_3)
+
+#' Three pollutant model
+#' Overall ORC + IAQ + SOC and the number of symptoms reported (frequent)
+mod1_2_3 <- glmer(freq_symptoms_count ~ scale_overall_score_current +
+                               scale_mean_orc + scale_iaq +
+                               job_teacher + loc_classroom +
+                               pct_free_reduced +
+                               (1|school),
+                             family = poisson, data = df3)
+summary(mod1_2_3)
+
+plot_model(mod1_2_3, type = "pred", terms = c("scale_overall_score_current"))
+plot_model(mod1_2_3, type = "pred", terms = c("scale_mean_orc"))
+plot_model(mod1_2_3, type = "pred", terms = c("scale_iaq"))
+```
+
+Interaction between job_cat and social climate
+
+```{r, echo = F, include = F, warning=FALSE}
+
+#' Social Climate
+mod1_int <- glmer(freq_symptoms_count ~ scale_overall_score_current +
+                    job_teacher + loc_classroom + pct_free_reduced +
+                    scale_overall_score_current * job_teacher +
+                    (1|school), family = poisson, data = df3)
+summary(mod1_int)
+
+#' Social Climate + Mean ORC
+mod1_2_int <- glmer(freq_symptoms_count ~ scale_overall_score_current +
+                      scale_mean_orc +
+                    job_teacher + loc_classroom + pct_free_reduced +
+                    scale_overall_score_current * job_teacher +
+                    (1|school), family = poisson, data = df3)
+summary(mod1_2_int)
+
+#' Social Climate + IAQ
+mod1_3_int <- glmer(freq_symptoms_count ~ scale_overall_score_current +
+                      scale_iaq +
+                    job_teacher + loc_classroom + pct_free_reduced +
+                    scale_overall_score_current * job_teacher +
+                    (1|school), family = poisson, data = df3)
+summary(mod1_3_int)
+
+#' Social Climate + IAQ
+mod1_2_3_int <- glmer(freq_symptoms_count ~ scale_overall_score_current +
+                      scale_mean_orc + scale_iaq +
+                    job_teacher + loc_classroom + pct_free_reduced +
+                    scale_overall_score_current * job_teacher +
+                    (1|school), family = poisson, data = df3)
+summary(mod1_2_3_int)
+
+mean_soc <- round(mean(df3$overall_score_current), 1)
+sd_soc <- round(sd(df3$overall_score_current), 1)
+soc_labs <- c(mean_soc-1*sd_soc, mean_soc, mean_soc+1*sd_soc, mean_soc+2*sd_soc)
+
+p1 <- plot_model(mod1_int,
+           type = "int", terms = c("scale_overall_score_current", "job_teacher"),
+           axis.title = c("Social Climate Score", "Predicted number of frequent health symptoms"),
+           title = "A) No co-pollutants",
+           legend.title = "Job category",
+           axis.labels = soc_labs) +
+  theme(legend.position = c(0.8, 0.8)) +
+  aes(linetype = group) +
+  guides(linetype = guide_legend(title="Job Category"),
+         color = guide_legend(title="Job Category")) +
+  scale_x_continuous(breaks = c(-1,0, 1, 2), labels = soc_labs)
+
+p1_2 <- plot_model(mod1_2_int, 
+           type = "int", terms = c("scale_overall_score_current", "job_teacher"),
+           axis.title = c("Social Climate Score", "Predicted number of frequent health symptoms"),
+           title = "B) Adjusting for ORC score",
+           legend.title = "Job category",
+           axis.labels = soc_labs) +
+  theme(legend.position = c(0.8, 0.8)) +
+  aes(linetype = group) +
+  guides(linetype = guide_legend(title="Job Category"),
+         color = guide_legend(title="Job Category")) +
+  scale_x_continuous(breaks = c(-1,0, 1, 2), labels = soc_labs)
+
+p1_3 <- plot_model(mod1_3_int, 
+           type = "int", terms = c("scale_overall_score_current", "job_teacher"),
+           axis.title = c("Social Climate Score", "Predicted number of frequent health symptoms"),
+           title = "c) Adjusting for IAQ score",
+           legend.title = "Job category",
+           axis.labels = soc_labs) +
+  theme(legend.position = c(0.8, 0.8)) +
+  aes(linetype = group) +
+  guides(linetype = guide_legend(title="Job Category"),
+         color = guide_legend(title="Job Category")) +
+  scale_x_continuous(breaks = c(-1,0, 1, 2), labels = soc_labs)
+
+p1_2_3 <- plot_model(mod1_2_3_int, 
+           type = "int", terms = c("scale_overall_score_current", "job_teacher"),
+           axis.title = c("Social Climate Score", "Predicted number of frequent health symptoms"),
+           title = "D) Adjusting for ORC and IAQ scores",
+           legend.title = "Job category",
+           axis.labels = soc_labs) +
+  theme(legend.position = c(0.8, 0.8)) +
+  aes(linetype = group) +
+  guides(linetype = guide_legend(title="Job Category"),
+         color = guide_legend(title="Job Category")) +
+  scale_x_continuous(breaks = c(-1,0, 1, 2), labels = soc_labs)
+
+(p1 | p1_2) / (p1_3 | p1_2_3)
+ggsave(filename = here::here("figs", "teach_soc_interaction.jpeg"),
+       device = "jpeg", units = "in", height = 8, width = 10)
+
+```
+
+Effect modification by social climate
+
+```{r, echo = F, include = F, warning=FALSE}
+#' Split into high and low social climate
+df3_low <- filter(df3, scale_overall_score_current <= 0)
+df3_high <- filter(df3, scale_overall_score_current > 0)
+
+#' Mean ORC- High SOC
+mod2_high <- glmer(freq_symptoms_count ~ scale_mean_orc +
+                     job_teacher + loc_classroom + pct_free_reduced + 
+                     (1|school), family = poisson, data = df3_high)
+summary(mod2_high)
+
+#' Mean ORC- Low SOC
+mod2_low <- glmer(freq_symptoms_count ~ scale_mean_orc +
+                     job_teacher + loc_classroom + pct_free_reduced + 
+                     (1|school), family = poisson, data = df3_low)
+summary(mod2_low)
+
+tab_model(mod2, mod2_low, mod2_high,
+          dv.labels = c("crude", "low SOC", "high SOC"))
+
+#' IAQ- High SOC
+mod3_high <- glmer(freq_symptoms_count ~ scale_iaq +
+                     job_teacher + loc_classroom + pct_free_reduced +
+                     (1|school), family = poisson, data = df3_high)
+summary(mod3_high)
+
+mod3_low <- glmer(freq_symptoms_count ~ scale_iaq +
+                     job_teacher + loc_classroom + pct_free_reduced +
+                     (1|school), family = poisson, data = df3_low)
+summary(mod3_low)
+
+tab_model(mod3, mod3_low, mod3_high,
+          dv.labels = c("crude", "low SOC", "high SOC"))
+
+```
+
+
+#### 3.6 Associations between social climate scores and specific frequent health outcomes
+
+```{r, echo = F, include = F, warnings = F}
+#' -----------------------------------------------------------------------------
+#' Associations between overall social environment scores and specific health
+#' symptoms
+#'
+#' Outcomes: headaches, eye_irritation, sore_throat, sinus_symp, sneeze,
+#' eye_strain, tension, lack_atten, dizziness, nausea, depression, lethargy
+#'
+#' The models include a random intercept for school
+#'
+#' Using the scaled versions of the social environment survey score for better
+#' model convergence
+#'
+#' Covariates: scale_iaq (continuous), job_teacher (binary), loc_classroom
+#' (binary), pct_free_reduced (continuous)
+#'
+#' Main findings:
+#'     - Overall social climate score was negatively associated with lethargy
+#'     - Being a teacher was associated with feelings of depression or sadness
+#'     - The effect of overall campus climate on feelings of depression was
+#'     stronger for non-teachers compared to teachers
+#' -----------------------------------------------------------------------------
+
+#' Social Climate
+#' SOC and self-reported frequent headaches
+soc_freq_headache <- glmer(freq_headaches ~
+                             scale_overall_score_current + 
+                             job_teacher + loc_classroom + pct_free_reduced +
+                             (1|school),
+                           family = binomial, data = df3)
+tab_model(soc_freq_headache)
+
+#' SOC and self-reported frequent eye_irritations
+soc_freq_eye_irritation <- glmer(freq_eye_irritation ~
+                                   scale_overall_score_current + 
+                                   job_teacher + loc_classroom + pct_free_reduced +
+                                   (1|school),
+                                 family = binomial, data = df3)
+tab_model(soc_freq_eye_irritation)
+
+#' SOC and self-reported frequent sore_throat
+soc_freq_sore_throat <- glmer(freq_sore_throat ~
+                                scale_overall_score_current + 
+                                job_teacher + loc_classroom + pct_free_reduced +
+                                (1|school),
+                              family = binomial, data = df3)
+tab_model(soc_freq_sore_throat)
+
+#' SOC and self-reported frequent sinus_symp
+soc_freq_sinus_symp <- glmer(freq_sinus_symp ~
+                               scale_overall_score_current + 
+                               job_teacher + loc_classroom + pct_free_reduced +
+                               (1|school),
+                             family = binomial, data = df3)
+tab_model(soc_freq_sinus_symp)
+
+#' SOC and self-reported frequent sneeze
+soc_freq_sneeze <- glmer(freq_sneeze ~
+                           scale_overall_score_current + 
+                           job_teacher + loc_classroom + pct_free_reduced +
+                           (1|school),
+                         family = binomial, data = df3)
+tab_model(soc_freq_sneeze)
+
+#' SOC and self-reported frequent eye_strain
+soc_freq_eye_strain <- glmer(freq_eye_strain ~
+                               scale_overall_score_current + 
+                               job_teacher + loc_classroom + pct_free_reduced +
+                               (1|school),
+                             family = binomial, data = df3)
+tab_model(soc_freq_eye_strain)
+
+#' SOC and self-reported frequent tension
+soc_freq_tension <- glmer(freq_tension ~
+                            scale_overall_score_current + 
+                            job_teacher + loc_classroom + pct_free_reduced +
+                            (1|school),
+                          family = binomial, data = df3)
+tab_model(soc_freq_tension)
+
+#' SOC and self-reported frequent lack_atten
+soc_freq_lack_atten <- glmer(freq_lack_atten ~
+                               scale_overall_score_current + 
+                               job_teacher + loc_classroom + pct_free_reduced +
+                               (1|school),
+                             family = binomial, data = df3)
+tab_model(soc_freq_lack_atten)
+
+#' SOC and self-reported frequent dizziness
+soc_freq_dizziness <- glmer(freq_dizziness ~
+                              scale_overall_score_current + 
+                              job_teacher + loc_classroom + pct_free_reduced +
+                              (1|school),
+                            family = binomial, data = df3)
+tab_model(soc_freq_dizziness)
+
+
+#' SOC and self-reported frequent depression
+soc_freq_depression <- glmer(freq_depression ~
+                               scale_overall_score_current + 
+                               job_teacher + loc_classroom + pct_free_reduced +
+                               (1|school),
+                             family = binomial, data = df3)
+tab_model(soc_freq_depression)
+
+#' SOC and self-reported frequent lethargy
+soc_freq_lethargy <- glmer(freq_lethargy ~
+                             scale_overall_score_current + 
+                             job_teacher + loc_classroom +
+                             pct_free_reduced +
+                             (1|school),
+                           family = binomial, data = df3)
+tab_model(soc_freq_lethargy)
+
+#' Operational Report Card
+#' ORC and self-reported frequent headaches
+orc_freq_headache <- glmer(freq_headaches ~
+                             scale_mean_orc + 
+                             job_teacher + loc_classroom + pct_free_reduced +
+                             (1|school),
+                           family = binomial, data = df3)
+tab_model(orc_freq_headache)
+
+#' ORC and self-reported frequent eye_irritations
+orc_freq_eye_irritation <- glmer(freq_eye_irritation ~
+                                   scale_mean_orc + 
+                                   job_teacher + loc_classroom + pct_free_reduced +
+                                   (1|school),
+                                 family = binomial, data = df3)
+tab_model(orc_freq_eye_irritation)
+
+#' ORC and self-reported frequent sore_throat
+orc_freq_sore_throat <- glmer(freq_sore_throat ~
+                                scale_mean_orc + 
+                                job_teacher + loc_classroom + pct_free_reduced +
+                                (1|school),
+                              family = binomial, data = df3)
+tab_model(orc_freq_sore_throat)
+
+#' ORC and self-reported frequent sinus_symp
+orc_freq_sinus_symp <- glmer(freq_sinus_symp ~
+                               scale_mean_orc + 
+                               job_teacher + loc_classroom + pct_free_reduced +
+                               (1|school),
+                             family = binomial, data = df3)
+tab_model(orc_freq_sinus_symp)
+
+#' ORC and self-reported frequent sneeze
+orc_freq_sneeze <- glmer(freq_sneeze ~
+                           scale_mean_orc + 
+                           job_teacher + loc_classroom + pct_free_reduced +
+                           (1|school),
+                         family = binomial, data = df3)
+tab_model(orc_freq_sneeze)
+
+#' ORC and self-reported frequent eye_strain
+orc_freq_eye_strain <- glmer(freq_eye_strain ~
+                               scale_mean_orc + 
+                               job_teacher + loc_classroom + pct_free_reduced +
+                               (1|school),
+                             family = binomial, data = df3)
+tab_model(orc_freq_eye_strain)
+
+#' ORC and self-reported frequent tension
+orc_freq_tension <- glmer(freq_tension ~
+                            scale_mean_orc + 
+                            job_teacher + loc_classroom + pct_free_reduced +
+                            (1|school),
+                          family = binomial, data = df3)
+tab_model(orc_freq_tension)
+
+#' ORC and self-reported frequent lack_atten
+orc_freq_lack_atten <- glmer(freq_lack_atten ~
+                               scale_mean_orc + 
+                               job_teacher + loc_classroom + pct_free_reduced +
+                               (1|school),
+                             family = binomial, data = df3)
+tab_model(orc_freq_lack_atten)
+
+#' ORC and self-reported frequent dizziness
+orc_freq_dizziness <- glmer(freq_dizziness ~
+                              scale_mean_orc + 
+                              job_teacher + loc_classroom + pct_free_reduced +
+                              (1|school),
+                            family = binomial, data = df3)
+tab_model(orc_freq_dizziness)
+
+#' ORC and self-reported frequent depression
+orc_freq_depression <- glmer(freq_depression ~
+                               scale_mean_orc + 
+                               job_teacher + loc_classroom + pct_free_reduced +
+                               (1|school),
+                             family = binomial, data = df3)
+tab_model(orc_freq_depression)
+
+#' IAQ and self-reported frequent lethargy
+iaq_freq_lethargy <- glmer(freq_lethargy ~
+                             scale_iaq + 
+                             job_teacher + loc_classroom +
+                             pct_free_reduced +
+                             (1|school),
+                           family = binomial, data = df3)
+tab_model(iaq_freq_lethargy)
+
+#' Operational Report Card
+#' IAQ and self-reported frequent headaches
+iaq_freq_headache <- glmer(freq_headaches ~
+                             scale_iaq + 
+                             job_teacher + loc_classroom + pct_free_reduced +
+                             (1|school),
+                           family = binomial, data = df3)
+tab_model(iaq_freq_headache)
+
+#' IAQ and self-reported frequent eye_irritations
+iaq_freq_eye_irritation <- glmer(freq_eye_irritation ~
+                                   scale_iaq + 
+                                   job_teacher + loc_classroom + pct_free_reduced +
+                                   (1|school),
+                                 family = binomial, data = df3)
+tab_model(iaq_freq_eye_irritation)
+
+#' IAQ and self-reported frequent sore_throat
+iaq_freq_sore_throat <- glmer(freq_sore_throat ~
+                                scale_iaq + 
+                                job_teacher + loc_classroom + pct_free_reduced +
+                                (1|school),
+                              family = binomial, data = df3)
+tab_model(iaq_freq_sore_throat)
+
+#' IAQ and self-reported frequent sinus_symp
+iaq_freq_sinus_symp <- glmer(freq_sinus_symp ~
+                               scale_iaq + 
+                               job_teacher + loc_classroom + pct_free_reduced +
+                               (1|school),
+                             family = binomial, data = df3)
+tab_model(iaq_freq_sinus_symp)
+
+#' IAQ and self-reported frequent sneeze
+iaq_freq_sneeze <- glmer(freq_sneeze ~
+                           scale_iaq + 
+                           job_teacher + loc_classroom + pct_free_reduced +
+                           (1|school),
+                         family = binomial, data = df3)
+tab_model(iaq_freq_sneeze)
+
+#' IAQ and self-reported frequent eye_strain
+iaq_freq_eye_strain <- glmer(freq_eye_strain ~
+                               scale_iaq + 
+                               job_teacher + loc_classroom + pct_free_reduced +
+                               (1|school),
+                             family = binomial, data = df3)
+tab_model(iaq_freq_eye_strain)
+
+#' IAQ and self-reported frequent tension
+iaq_freq_tension <- glmer(freq_tension ~
+                            scale_iaq + 
+                            job_teacher + loc_classroom + pct_free_reduced +
+                            (1|school),
+                          family = binomial, data = df3)
+tab_model(iaq_freq_tension)
+
+#' IAQ and self-reported frequent lack_atten
+iaq_freq_lack_atten <- glmer(freq_lack_atten ~
+                               scale_iaq + 
+                               job_teacher + loc_classroom + pct_free_reduced +
+                               (1|school),
+                             family = binomial, data = df3)
+tab_model(iaq_freq_lack_atten)
+
+#' IAQ and self-reported frequent dizziness
+iaq_freq_dizziness <- glmer(freq_dizziness ~
+                              scale_iaq + 
+                              job_teacher + loc_classroom + pct_free_reduced +
+                              (1|school),
+                            family = binomial, data = df3)
+tab_model(iaq_freq_dizziness)
+
+#' IAQ and self-reported frequent depression
+iaq_freq_depression <- glmer(freq_depression ~
+                               scale_iaq + 
+                               job_teacher + loc_classroom + pct_free_reduced +
+                               (1|school),
+                             family = binomial, data = df3)
+tab_model(iaq_freq_depression)
+
+#' IAQ and self-reported frequent lethargy
+iaq_freq_lethargy <- glmer(freq_lethargy ~
+                             scale_iaq + 
+                             job_teacher + loc_classroom +
+                             pct_free_reduced +
+                             (1|school),
+                           family = binomial, data = df3)
+tab_model(iaq_freq_lethargy)
+```
+```
+
+### 4. Summary of main findings
+
+Overall, we found that higher social climate scores were associated with lower rates of frequently reported health symptoms among survey participants in our school. Social climate scores were inversely associated with the odds of experiencing frequent headaches, dizziness, and lethargy. Being a teacher was associated with increased odds of experiencing frequent depression. 
+
+Social climate scores may modify the effect of indoor air quality on the rate of frequently reported health symptoms. Staff in schools with higher social climate scores had lower rates of frequent health outcomes compared to staff from low social climate schools.
+
+We also found that that the relationship between higher social climate scores and lower rates of frequent health symptoms was attenuated for participants who were teachers compared to other job categories. As social climate scores were only available at the school level, we were not able to assess whether there were differences in how teachers assess their schools' social climates relative to other staff working in the school.
+
